@@ -17,7 +17,7 @@
 
 ZKsync Era is an EVM compatible layer 2 rollup that uses zero-knowledge proofs to scale Ethereum without compromising on security or decentralization.
 
-[Documentation](https://docs.zksync.io/)
+[Documentation](https://docs.zksync.io/)  
 [Website](https://zksync.io/)  
 [Twitter](https://x.com/zksync)  
 [GitHub](https://github.com/matter-labs)
@@ -300,7 +300,7 @@ l1-contracts
 │       ├── IPausable.sol
 │       ├── IProtocolUpgradeHandler.sol
 │       ├── ISecurityCouncil.sol
-│       ├── IStateTransitionManager.sol
+│       ├── IChainTypeManager.sol
 │       └── IZKsyncEra.sol
 
 l2-contracts
@@ -346,8 +346,17 @@ yarn && yarn build
 
 Tests:
 
+Foundry:
+
 ```bash
+# Make sure you build all the contracts from the list below to have all the tests working
 yarn test:foundry
+```
+
+Hardhat:
+
+```bash
+yarn test
 ```
 
 2. `era-contracts/l2-contracts`
@@ -360,8 +369,22 @@ yarn && yarn build
 
 Tests:
 
+Hardhat:
+
 ```bash
+# In the first terminal
+yarn test-node
+```
+
+```bash
+# In the second terminal
 yarn test
+```
+
+Foundry:
+
+```bash
+yarn test:foundry
 ```
 
 3. `era-contracts/system-contracts`
@@ -389,7 +412,7 @@ yarn test
 Build:
 
 ```bash
-yarn && yarn build
+yarn && yarn build && forge compile
 ```
 
 5. `zk-governance/l1-contracts`
@@ -425,17 +448,18 @@ forge test
 
 Everything found during previous audits & contests:
 - https://docs.zksync.io/build/resources/audit-bug-bounty
+- https://code4rena.com/reports/2022-10-zksync
 - https://code4rena.com/reports/2023-03-zksync
 - https://code4rena.com/reports/2023-10-zksync
 - https://code4rena.com/reports/2024-03-zksync
 
-1. Contracts  on  L1  cannot  access  their  native  balance  on  their  aliased  L2 
+1) Contracts  on  L1  cannot  access  their  native  balance  on  their  aliased  L2 
 address
 
 It is currently not possible for an L1 smart contract to access and transfer the 
 native tokens on their aliased L2 address. 
 
-2. Gas  spent  on  pubdata  is  not  subtracted  in  between  near  calls,  leading  to 
+2) Gas  spent  on  pubdata  is  not  subtracted  in  between  near  calls,  leading  to 
 uncompensated operator calculations and potential DOS.
 
 The  bootloader executes  transactions  with the amount  of  gas  that  has  been  requested  and 
@@ -448,16 +472,20 @@ it is ensured that the overspent gas does not cause any
 state changes, the operator is forced to perform computations without receiving 
 compensation  for  it.
 
-3. Validator can provide inefficient bytecode compression
+3) Validator can provide inefficient bytecode compression
 
 In the current implementation, the mechanism for bytecode compression is not strictly unambiguous. That means the validator has the flexibility to choose a less efficient compression for the bytecode to increase the deployment cost for the end user. Besides that, there is another non-fixed [issue](https://github.com/code-423n4/2023-10-zksync-findings/issues/805), that gives a way for the operator to forces the user to pay more for the bytecode compression or even burn all the transaction gas during bytecode compression verification.
 
-4. extcodehash does not distinguish empty contracts on account balances
+4) extcodehash does not distinguish empty contracts on account balances
 
 According to the [EIP-161](https://eips.ethereum.org/EIPS/eip-161), an account is “empty” when it meets the following conditions: it has no deployed code, its nonce value is zero, and it holds a balance of zero. According to [EIP-1052](https://eips.ethereum.org/EIPS/eip-1052), the extcodehash of an empty account should evaluate to `bytes32(0)`, otherwice it is `keccak256(deployedBytecode)`. On ZKsync, bytes32(0) is returned in case there is no deployed code and nonce is zero regardless of the account balance.
 
-5. DefaultAccount does not always return successfully
+5) DefaultAccount does not always return successfully
 
 DefaultAccount, while it should always behave as an EOA (i.e. any call to it should return success(0,0)), if called with a selector of one of its methods and incorrect ABI-encoding of its parameters, will fail with empty error. This happens due to the fact that the ABI decoding fails before the modifier is triggered.
+
+6) Fee model may have imperfect price alignment
+
+The price that users pay on L1 may not accurately represent the actual price and may lead to overcharge/undercharge. Also, due to attachment to L1 gas price may incentivize to submit transactions when the L1 gas price is low regardless of the L2 congestion. Generally the fee model may be revised in future releases.
 
 [//]: # (known-issues-close)
